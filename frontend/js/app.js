@@ -8,7 +8,7 @@ const app = {
 
     async init() {
         // Initialize DB with sample data if needed (silent)
-        try { await fetch('http://127.0.0.1:8000/api/init'); } catch (e) { }
+        try { await fetch('http://127.0.0.1:13081/api/init'); } catch (e) { }
 
         await this.loadDomains();
         mermaid.initialize({ startOnLoad: false, theme: 'default' });
@@ -16,7 +16,7 @@ const app = {
     },
 
     async loadDomains() {
-        const res = await fetch('http://127.0.0.1:8000/api/domains');
+        const res = await fetch('http://127.0.0.1:13081/api/domains');
         this.state.domains = await res.json();
         this.renderSidebar();
     },
@@ -45,7 +45,7 @@ const app = {
 
         // Fetch Recipes (filtering on client for simplicity if API returns all, or optimize API later)
         // For now API returns all, we filter here or update API. Let's filter client side for V1.
-        const res = await fetch('http://127.0.0.1:8000/api/recipes');
+        const res = await fetch('http://127.0.0.1:13081/api/recipes');
         const allRecipes = await res.json();
         this.state.recipes = allRecipes.filter(r => r.domain_id === id);
         this.renderRecipes();
@@ -191,7 +191,7 @@ const app = {
 
         if (!content) return;
 
-        const res = await fetch(`http://127.0.0.1:8000/api/recipes/${this.state.currentRecipe.id}/notes`, {
+        const res = await fetch(`http://127.0.0.1:13081/api/recipes/${this.state.currentRecipe.id}/notes`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -217,7 +217,7 @@ const app = {
     },
 
     async createDomain(name) {
-        await fetch('http://127.0.0.1:8000/api/domains', {
+        await fetch('http://127.0.0.1:13081/api/domains', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, description: "New domain", systems: [] })

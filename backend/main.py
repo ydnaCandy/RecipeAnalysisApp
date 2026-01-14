@@ -101,5 +101,9 @@ def create_recipe(recipe: schemas.RecipeCreate, db: Session = Depends(get_db)):
 def create_note(recipe_id: int, note: schemas.RecipeNoteCreate, db: Session = Depends(get_db)):
     return crud.create_recipe_note(db=db, recipe_id=recipe_id, note=note)
 
-# Serve Frontend
-app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
+# Serve Frontend only if directory exists (for local dev, or if built together)
+import os
+if os.path.isdir("frontend"):
+    app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
+else:
+    print("Frontend directory not found, skipping mount.")
