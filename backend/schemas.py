@@ -26,6 +26,11 @@ class RecipeBase(BaseModel):
 class RecipeCreate(RecipeBase):
     domain_id: int
 
+class RecipeUpdate(BaseModel):
+    title: Optional[str] = None
+    sql_content: Optional[str] = None
+    summary: Optional[str] = None
+
 class Recipe(RecipeBase):
     id: int
     domain_id: int

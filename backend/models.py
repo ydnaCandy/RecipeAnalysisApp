@@ -41,7 +41,7 @@ class RecipeNote(Base):
     id = Column(Integer, primary_key=True, index=True)
     recipe_id = Column(Integer, ForeignKey("recipes.id"))
     author_name = Column(String)
-    note_type = Column(String)  # 'caution', 'memo'
+    note_type = Column(String)  # 'caution' または 'memo'
     content = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
 

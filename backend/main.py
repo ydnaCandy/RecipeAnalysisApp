@@ -18,25 +18,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# API Endpoints
+# APIエンドポイント定義
 
 @app.get("/api/init")
 def init_db(db: Session = Depends(get_db)):
-    # Check if data already exists
+    # データが既に存在するか確認
     if db.query(models.Domain).first():
         return {"message": "Data already initialized"}
 
-    # Create Sample Domain: Sales
+    # サンプルドメイン「営業」を作成
     sales_domain = models.Domain(name="営業 (Sales)", description="売上、顧客データに関する分析ドメイン")
     db.add(sales_domain)
     db.commit()
     db.refresh(sales_domain)
 
-    # Add Systems
+    # 関連システムの追加
     db.add(models.DomainSystem(domain_id=sales_domain.id, system_name="Salesforce"))
     db.add(models.DomainSystem(domain_id=sales_domain.id, system_name="Google Analytics"))
     
-    # Create Sample Recipe
+    # サンプルレシピの作成
     sql_sample = """
 SELECT 
     o.order_id,
@@ -58,7 +58,7 @@ WHERE o.order_date >= '2023-01-01'
     db.commit()
     db.refresh(sales_recipe)
     
-    # Add Note
+    # ノート（メモ）の追加
     db.add(models.RecipeNote(
         recipe_id=sales_recipe.id,
         author_name="データ分析チーム",
@@ -67,7 +67,7 @@ WHERE o.order_date >= '2023-01-01'
     ))
     db.commit()
 
-    # Create Sample Domain: Production
+    # サンプルドメイン「製造」を作成
     prod_domain = models.Domain(name="製造 (Production)", description="工場、在庫、品質管理に関する分析")
     db.add(prod_domain)
     db.commit()
@@ -97,11 +97,18 @@ def create_domain(domain: schemas.DomainCreate, db: Session = Depends(get_db)):
 def create_recipe(recipe: schemas.RecipeCreate, db: Session = Depends(get_db)):
     return crud.create_recipe(db=db, recipe=recipe)
 
+@app.put("/api/recipes/{recipe_id}", response_model=schemas.Recipe)
+def update_recipe(recipe_id: int, recipe_update: schemas.RecipeUpdate, db: Session = Depends(get_db)):
+    db_recipe = crud.update_recipe(db=db, recipe_id=recipe_id, recipe_update=recipe_update)
+    if not db_recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    return db_recipe
+
 @app.post("/api/recipes/{recipe_id}/notes", response_model=schemas.RecipeNote)
 def create_note(recipe_id: int, note: schemas.RecipeNoteCreate, db: Session = Depends(get_db)):
     return crud.create_recipe_note(db=db, recipe_id=recipe_id, note=note)
 
-# Serve Frontend only if directory exists (for local dev, or if built together)
+# フロントエンドディレクトリが存在する場合のみ配信（ローカル開発やビルド済み環境用）
 import os
 if os.path.isdir("frontend"):
     app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")

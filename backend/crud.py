@@ -35,6 +35,22 @@ def create_recipe(db: Session, recipe: schemas.RecipeCreate):
     db.refresh(db_recipe)
     return db_recipe
 
+def update_recipe(db: Session, recipe_id: int, recipe_update: schemas.RecipeUpdate):
+    db_recipe = db.query(models.Recipe).filter(models.Recipe.id == recipe_id).first()
+    if not db_recipe:
+        return None
+    
+    if recipe_update.title is not None:
+        db_recipe.title = recipe_update.title
+    if recipe_update.sql_content is not None:
+        db_recipe.sql_content = recipe_update.sql_content
+    if recipe_update.summary is not None:
+        db_recipe.summary = recipe_update.summary
+        
+    db.commit()
+    db.refresh(db_recipe)
+    return db_recipe
+
 def create_recipe_note(db: Session, recipe_id: int, note: schemas.RecipeNoteCreate):
     db_note = models.RecipeNote(
         recipe_id=recipe_id,
