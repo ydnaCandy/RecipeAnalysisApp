@@ -6,7 +6,6 @@ from .database import SessionLocal, engine, get_db
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
@@ -18,70 +17,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# APIエンドポイント定義
-
-@app.get("/api/init")
-def init_db(db: Session = Depends(get_db)):
-    """
-    データベースを初期化し、サンプルデータを投入します。
-    """
-    # データが既に存在するか確認
-    if db.query(models.Domain).first():
-        return {"message": "Data already initialized"}
-
-    # サンプルドメイン「営業」を作成
-    sales_domain = models.Domain(name="営業 (Sales)", description="売上、顧客データに関する分析ドメイン")
-    db.add(sales_domain)
-    db.commit()
-    db.refresh(sales_domain)
-
-    # 関連システムの追加
-    db.add(models.DomainSystem(domain_id=sales_domain.id, system_name="Salesforce"))
-    db.add(models.DomainSystem(domain_id=sales_domain.id, system_name="Google Analytics"))
-    
-    # サンプルレシピの作成
-    sql_sample = """
-SELECT 
-    o.order_id,
-    c.customer_name,
-    p.product_name,
-    o.amount
-FROM orders o
-JOIN customers c ON o.customer_id = c.customer_id
-JOIN products p ON o.product_id = p.product_id
-WHERE o.order_date >= '2023-01-01'
-    """
-    sales_recipe = models.Recipe(
-        domain_id=sales_domain.id,
-        title="月次売上集計(顧客・商品別)",
-        sql_content=sql_sample.strip(),
-        summary="顧客ごと、商品ごとの売上実績を集計する基本クエリ。"
-    )
-    db.add(sales_recipe)
-    db.commit()
-    db.refresh(sales_recipe)
-    
-    # ノート（メモ）の追加
-    db.add(models.RecipeNote(
-        recipe_id=sales_recipe.id,
-        author_name="データ分析チーム",
-        note_type="caution",
-        content="キャンセル注文が含まれないようにWHERE句のステータス確認が必要かも。"
-    ))
-    db.commit()
-
-    # サンプルドメイン「製造」を作成
-    prod_domain = models.Domain(name="製造 (Production)", description="工場、在庫、品質管理に関する分析")
-    db.add(prod_domain)
-    db.commit()
-    db.refresh(prod_domain)
-    
-    db.add(models.DomainSystem(domain_id=prod_domain.id, system_name="IoT Log DB"))
-    db.add(models.DomainSystem(domain_id=prod_domain.id, system_name="Inventory App"))
-    
-    db.commit()
-
-    return {"message": "Initialized with sample data"}
 
 @app.get("/api/recipes", response_model=List[schemas.Recipe])
 def read_recipes(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):

@@ -28,12 +28,11 @@ pip install -r requirements.txt
 
 ### 2. データベース
 
-初回起動時に自動的に SQLite データベース (`recipe.db`) が作成されます。
-サンプルデータを投入したい場合は、サーバー起動後にブラウザまたはcurlで以下にアクセスしてください。
+コンテナ起動時に以下のスクリプトが自動実行されます：
+1. `backend/data/init_db.py`: データベースとテーブルの作成（既存データは保持）
+2. `backend/data/create_test_data.py`: テストデータの投入（データが空の場合のみ）
 
-```
-GET /api/init
-```
+手動で初期化を行いたい場合は、各スクリプトを直接実行してください。
 
 ### 3. フロントエンド
 
@@ -44,18 +43,35 @@ Tailwind CSS 等の依存関係はCDNまたはローカルインストールで�
 npm install
 ```
 
-## アプリケーションの起動
+## コンテナでの実行 (推奨)
+
+Docker Composeを利用してアプリケーション一式（フロントエンド＋バックエンド）を起動します。
+
+```bash
+# ビルドとバックグラウンド起動
+docker compose up -d --build
+
+# ログの確認
+docker compose logs -f
+```
+
+起動後、ブラウザで [http://localhost:13080](http://localhost:13080) にアクセスするとダッシュボードが表示されます。
+
+## ローカル開発での起動
 
 仮想環境をアクティベートした状態で、以下のコマンドを実行してください。
 
 ```bash
-uvicorn backend.main:app --reload --port 8000
-```
+# DB初期化 (初回のみ)
+python backend/data/init_db.py
+python backend/data/create_test_data.py
 
-起動後、ブラウザで [http://localhost:8000](http://localhost:8000) にアクセスするとダッシュボードが表示されます。
+# サーバー起動 (ポートは適宜変更可)
+uvicorn backend.main:app --reload --port 13081
+```
 
 ## ディレクトリ構成
 
 *   `backend/`: FastAPI アプリケーションコード
+*   `backend/data/`: データベース初期化スクリプト (`init_db.py`, `create_test_data.py`) および DBファイル
 *   `frontend/`: HTML, CSS, JavaScript ソースコード
-*   `recipe.db`: SQLite データベースファイル (自動生成)
