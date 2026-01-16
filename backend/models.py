@@ -4,6 +4,10 @@ from datetime import datetime
 from .database import Base
 
 class Domain(Base):
+    """
+    分析ドメイン（業務領域）を表すモデル。
+    例: 「営業」「製造」「人事」など、分析のコンテキストを定義します。
+    """
     __tablename__ = "domains"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -14,6 +18,10 @@ class Domain(Base):
     recipes = relationship("Recipe", back_populates="domain")
 
 class DomainSystem(Base):
+    """
+    ドメインに関連するシステムを表すモデル。
+    例: 営業ドメインにおける「Salesforce」「Google Analytics」など。
+    """
     __tablename__ = "domain_systems"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -23,6 +31,10 @@ class DomainSystem(Base):
     domain = relationship("Domain", back_populates="systems")
 
 class Recipe(Base):
+    """
+    分析レシピ（SQLクエリとそのメタデータ）を表すモデル。
+    特定のドメインに紐づき、具体的な分析ロジックを保持します。
+    """
     __tablename__ = "recipes"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -36,6 +48,10 @@ class Recipe(Base):
     notes = relationship("RecipeNote", back_populates="recipe")
 
 class RecipeNote(Base):
+    """
+    レシピに対するメモや注意書きを表すモデル。
+    ナレッジシェアリングや実装時の注意点（Caution）を記録します。
+    """
     __tablename__ = "recipe_notes"
 
     id = Column(Integer, primary_key=True, index=True)
