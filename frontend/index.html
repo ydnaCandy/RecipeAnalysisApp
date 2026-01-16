@@ -99,13 +99,18 @@
             id="recipe-modal-content">
             <div class="h-16 border-b border-slate-100 flex items-center justify-between px-6 bg-slate-50/50">
                 <h3 id="modal-title" class="text-lg font-bold text-slate-800 truncate pr-4">Recipe Title</h3>
-                <button onclick="app.closeRecipeModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
+                <div class="flex items-center gap-2">
+                    <button onclick="app.showEditRecipeModal()"
+                        class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1 rounded-md transition-colors font-medium">Edit</button>
+                    <button onclick="app.closeRecipeModal()"
+                        class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <div class="flex-1 overflow-y-auto p-6 space-y-8">
@@ -185,6 +190,58 @@
                         <!-- Notes injected here -->
                     </div>
                 </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Creating Recipe -->
+    <div id="create-recipe-modal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center transition-opacity opacity-0">
+        <div class="bg-white w-[600px] rounded-xl shadow-2xl transform scale-95 transition-transform duration-200 p-6"
+            id="create-recipe-modal-content">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-slate-800">Create New Recipe</h3>
+                <button onclick="app.closeCreateRecipeModal()" class="text-slate-400 hover:text-slate-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Title</label>
+                    <input type="text" id="new-recipe-title"
+                        class="w-full border-slate-300 rounded-lg shadow-sm focus:border-brand-500 focus:ring-brand-500 px-3 py-2 border"
+                        placeholder="e.g. Monthly Sales Report">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Summary</label>
+                    <textarea id="new-recipe-summary" rows="3"
+                        class="w-full border-slate-300 rounded-lg shadow-sm focus:border-brand-500 focus:ring-brand-500 px-3 py-2 border"
+                        placeholder="Brief description of what this recipe solves..."></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">SQL Query</label>
+                    <textarea id="new-recipe-sql" rows="6"
+                        class="w-full font-mono text-xs bg-slate-50 border-slate-300 rounded-lg shadow-sm focus:border-brand-500 focus:ring-brand-500 px-3 py-2 border"
+                        placeholder="SELECT * FROM table..."></textarea>
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-end gap-3">
+                <button onclick="app.closeCreateRecipeModal()"
+                    class="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <button onclick="app.submitNewRecipe()"
+                    class="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2 rounded-lg shadow-md transition-all font-medium">
+                    Create Recipe
+                </button>
             </div>
         </div>
     </div>

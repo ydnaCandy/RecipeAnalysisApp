@@ -3,11 +3,12 @@ const app = {
         domains: [],
         currentDomain: null,
         recipes: [],
-        currentRecipe: null
+        currentRecipe: null,
+        editingRecipeId: null
     },
 
     async init() {
-        // Initialize DB with sample data if needed (silent)
+        // DB初期データ投入（既存データがある場合はAPI側でスキップされるためエラーハンドリングのみ）
         try { await fetch('http://127.0.0.1:13081/api/init'); } catch (e) { }
 
         await this.loadDomains();
@@ -35,16 +36,15 @@ const app = {
 
     async selectDomain(id) {
         this.state.currentDomain = this.state.domains.find(d => d.id === id);
-        this.renderSidebar(); // update active state
+        this.renderSidebar(); // アクティブ状態の更新
 
-        // Update Header
+        // ヘッダー情報の更新
         document.getElementById('current-domain-title').textContent = this.state.currentDomain.name;
         document.getElementById('domain-systems').innerHTML = this.state.currentDomain.systems.map(s =>
             `<span class="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2 py-0.5 rounded border border-indigo-200">${s.system_name}</span>`
         ).join('');
 
-        // Fetch Recipes (filtering on client for simplicity if API returns all, or optimize API later)
-        // For now API returns all, we filter here or update API. Let's filter client side for V1.
+        // レシピ取得（V1では全件取得後にクライアント側でフィルタリング対応。データ量が増えたらAPI側でフィルタリングする）
         const res = await fetch('http://127.0.0.1:13081/api/recipes');
         const allRecipes = await res.json();
         this.state.recipes = allRecipes.filter(r => r.domain_id === id);
@@ -83,41 +83,40 @@ const app = {
         this.state.currentRecipe = this.state.recipes.find(r => r.id === id);
         const r = this.state.currentRecipe;
 
-        // Populate Modal
+        // モーダルへのデータ流し込み
         document.getElementById('modal-title').textContent = r.title;
         document.getElementById('modal-summary').textContent = r.summary;
-        // Basic Syntax Highlighting for SQL
+        // SQLの簡易シンタックスハイライト適用
         const sqlCodeBlock = document.getElementById('modal-sql');
-        sqlCodeBlock.textContent = r.sql_content; // Use textContent to prevent XSS and preserve formatting
-        sqlCodeBlock.className = 'language-sql'; // Add class for highlight.js
+        sqlCodeBlock.textContent = r.sql_content; // XSS対策のためtextContentを使用し、フォーマットを維持
+        sqlCodeBlock.className = 'language-sql'; // highlight.js用のクラス追加
         hljs.highlightElement(sqlCodeBlock);
 
-        // Reset ER Diagram state
+        // ER図の状態リセット
         const erDetails = document.getElementById('er-details');
         if (erDetails) {
-            erDetails.removeAttribute('open'); // Close details
+            erDetails.removeAttribute('open'); // 詳細を閉じる
             const diagramDiv = document.getElementById('mermaid-diagram');
             diagramDiv.innerHTML = 'Loading diagram...';
             diagramDiv.removeAttribute('data-processed');
 
-            // Re-attach listener if element was replaced? No, ID is stable.
-            // But if we navigate away and back, listeners persist. 
-            // Better to attach once in init().
+            // リスナーの再アタッチはinit()で行っているため不要。
+            // DOM要素が置換されていなければイベントリスナーは維持される。
         }
 
         this.renderNotes();
 
-        // Show Modal
+        // モーダルの表示
         const modal = document.getElementById('recipe-modal');
         modal.classList.remove('hidden');
-        // Small delay for transition
+        // トランジション用の微小遅延
         setTimeout(() => {
             modal.classList.remove('opacity-0');
             document.getElementById('recipe-modal-content').classList.remove('translate-x-full');
         }, 10);
     },
 
-    // Initialize listener for ER toggle
+    // ER図トグルのリスナー初期化
     setupListeners() {
         const erDetails = document.getElementById('er-details');
         if (erDetails) {
@@ -131,7 +130,7 @@ const app = {
 
     renderMermaid() {
         const diagramDiv = document.getElementById('mermaid-diagram');
-        // Only render if not already processed to avoid flicker/re-computation
+        // ちらつきや再計算を防ぐため、未処理の場合のみレンダリングを行う
         if (!diagramDiv.hasAttribute('data-processed') || diagramDiv.innerHTML === '' || diagramDiv.innerHTML === 'Loading diagram...') {
             const mermaidCode = Visualizer.generateMermaid(this.state.currentRecipe.sql_content);
             diagramDiv.removeAttribute('data-processed');
@@ -210,7 +209,7 @@ const app = {
         }
     },
 
-    // Placeholders for creation (not fully implemented in V1 UI but connected)
+    // 新規作成関連（V1 UIでは簡易実装だが機能は連携済み）
     showCreateDomainModal() {
         const name = prompt("Domain Name:");
         if (name) this.createDomain(name);
@@ -226,10 +225,122 @@ const app = {
     },
 
     showCreateRecipeModal() {
-        // Simple prompting for V1 to fulfill basic "create" req
         if (!this.state.currentDomain) return alert("Select a domain first");
-        // In real app use a modal, here simplified for brevity of single-file logic
-        alert("This would open a full create form. For now relying on init data or API calls.");
+
+        this.state.editingRecipeId = null;
+        document.querySelector('#create-recipe-modal h3').textContent = 'Create New Recipe';
+        document.querySelector('#create-recipe-modal button[onclick="app.submitNewRecipe()"]').textContent = 'Create Recipe';
+
+        const modal = document.getElementById('create-recipe-modal');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            document.getElementById('create-recipe-modal-content').classList.remove('scale-95');
+            document.getElementById('create-recipe-modal-content').classList.add('scale-100');
+        }, 10);
+    },
+
+    showEditRecipeModal() {
+        if (!this.state.currentRecipe) return;
+
+        this.state.editingRecipeId = this.state.currentRecipe.id;
+        const r = this.state.currentRecipe;
+
+        // フォームへのプレフィル（事前入力）
+        document.getElementById('new-recipe-title').value = r.title;
+        document.getElementById('new-recipe-summary').value = r.summary;
+        document.getElementById('new-recipe-sql').value = r.sql_content;
+
+        document.querySelector('#create-recipe-modal h3').textContent = 'Edit Recipe';
+        document.querySelector('#create-recipe-modal button[onclick="app.submitNewRecipe()"]').textContent = 'Update Recipe';
+
+        // 作成用モーダルを再利用
+        const modal = document.getElementById('create-recipe-modal');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            document.getElementById('create-recipe-modal-content').classList.remove('scale-95');
+            document.getElementById('create-recipe-modal-content').classList.add('scale-100');
+        }, 10);
+    },
+
+    closeCreateRecipeModal() {
+        const modal = document.getElementById('create-recipe-modal');
+        modal.classList.add('opacity-0');
+        document.getElementById('create-recipe-modal-content').classList.remove('scale-100');
+        document.getElementById('create-recipe-modal-content').classList.add('scale-95');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            // 閉じる際にフィールドをクリア
+            document.getElementById('new-recipe-title').value = '';
+            document.getElementById('new-recipe-summary').value = '';
+            document.getElementById('new-recipe-sql').value = '';
+            this.state.editingRecipeId = null;
+        }, 200);
+    },
+
+    async submitNewRecipe() {
+        if (!this.state.currentDomain) return;
+
+        const title = document.getElementById('new-recipe-title').value;
+        const summary = document.getElementById('new-recipe-summary').value;
+        const sql = document.getElementById('new-recipe-sql').value;
+
+        if (!title || !sql) {
+            alert("Title and SQL Content are required.");
+            return;
+        }
+
+        const payload = {
+            title: title,
+            summary: summary,
+            sql_content: sql
+        };
+
+        try {
+            let res;
+            if (this.state.editingRecipeId) {
+                // 更新処理
+                res = await fetch(`http://127.0.0.1:13081/api/recipes/${this.state.editingRecipeId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload) // domain_idは更新時には通常不要（スキーマでオプショナル）
+                });
+            } else {
+                // 新規作成処理
+                payload.domain_id = this.state.currentDomain.id;
+                res = await fetch('http://127.0.0.1:13081/api/recipes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            }
+
+            if (res.ok) {
+                const recipe = await res.json();
+
+                // 編集中の場合、もし編集用モーダルが開いていれば（隠れてはいるが）現在のビューも更新する
+                if (this.state.editingRecipeId) {
+                    this.state.currentRecipe = recipe;
+                    // 詳細ビューの更新
+                    document.getElementById('modal-title').textContent = recipe.title;
+                    document.getElementById('modal-summary').textContent = recipe.summary;
+                    const sqlCodeBlock = document.getElementById('modal-sql');
+                    sqlCodeBlock.textContent = recipe.sql_content;
+                    hljs.highlightElement(sqlCodeBlock);
+                    this.renderMermaid(); // ダイアグラムの再レンダリング
+                }
+
+                // リストの更新
+                this.selectDomain(this.state.currentDomain.id);
+                this.closeCreateRecipeModal();
+            } else {
+                alert("Failed to save recipe");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Error saving recipe");
+        }
     },
 
     copySql() {
@@ -238,5 +349,5 @@ const app = {
     }
 };
 
-// Start app
+// アプリケーションの開始
 app.init();
